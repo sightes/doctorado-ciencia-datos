@@ -1,0 +1,43 @@
+# requirements-ai.txt
+
+# LLM APIs
+openai
+anthropic
+httpx
+
+# HuggingFace
+transformers
+sentence-transformers
+tokenizers
+accelerate
+huggingface-hub
+safetensors
+
+# Vector databases
+qdrant-client
+chromadb
+
+# RAG / orchestration
+langchain
+langchain-core
+langchain-community
+langchain-openai
+langchain-text-splitters
+llama-index
+
+# Documents
+pypdf
+pymupdf
+python-docx
+
+# NLP
+nltk
+spacy
+tiktoken
+
+# Utilities
+numpy
+pydantic
+python-dotenv
+tenacity
+tqdm

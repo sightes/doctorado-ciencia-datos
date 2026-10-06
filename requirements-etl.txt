@@ -1,0 +1,26 @@
+# requirements-timeseries.txt
+
+pandas
+numpy
+scipy
+
+statsmodels
+scikit-learn
+
+# Forecasting
+prophet
+sktime
+statsforecast
+mlforecast
+
+# Gradient boosting
+xgboost
+lightgbm
+catboost
+
+# Optimización
+optuna
+
+# Visualización
+matplotlib
+plotly
