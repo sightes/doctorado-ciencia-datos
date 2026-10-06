@@ -1,0 +1,32 @@
+# Git
+jupyterlab-git
+jupytext
+nbdime
+
+# IDE / LSP
+jupyterlab-lsp
+python-lsp-server[all]
+
+# Monitoring
+jupyter-resource-usage
+jupyterlab_execute_time
+
+# Formatting
+jupyterlab-code-formatter
+black
+isort
+
+# Utilities
+jupyterlab-spellchecker
+jupyterlab-search-replace
+jupyterlab-quickopen
+jupyterlab-favorites
+jupyter-archive
+
+# Data
+lckr-jupyterlab-variableinspector
+jupyterlab_tabular_data_viewer_extension
+itables
+
+# Diagrams
+jupyterlab-drawio-render-extension
