@@ -1,4 +1,6 @@
-# Byte-compiled / optimized / DLL files
+# ============================================================
+# PYTHON
+# ============================================================
 __pycache__/
 *.py[cod]
 *$py.class
@@ -21,26 +23,35 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+MANIFEST
 
-# Virtual environments
+# ============================================================
+# VIRTUAL ENVIRONMENTS / SECRETS
+# ============================================================
 .env
-.venv
+.env.*
+!.env.example
 venv/
 ENV/
 env/
+.venv/
+conda-meta/
+secrets.*
+credentials.*
+*.pem
+*.key
 
-# Jupyter Notebook checkpoints
+# ============================================================
+# JUPYTER / IPYTHON
+# ============================================================
 .ipynb_checkpoints/
-
-# IPython
 profile_default/
 ipython_config.py
+*.nbconvert.ipynb
 
-# PyInstaller
-*.manifest
-*.spec
-
-# Unit test / coverage
+# ============================================================
+# TESTING / COVERAGE / TYPE CHECKING
+# ============================================================
 htmlcov/
 .tox/
 .nox/
@@ -52,41 +63,113 @@ coverage.xml
 *.cover
 .hypothesis/
 .pytest_cache/
-
-# Type checking
 .mypy_cache/
 .dmypy.json
 dmypy.json
 .pytype/
+.ruff_cache/
 
-# IDE / editor
+# ============================================================
+# IDE / EDITOR / OS
+# ============================================================
 .idea/
 .vscode/
 *.swp
 *.swo
 *~
-
-# OS
 .DS_Store
 Thumbs.db
 
-# Logs
+# ============================================================
+# LOGS
+# ============================================================
 *.log
 logs/
-
-# Model artifacts / data (no versionar datos grandes)
-*.pkl
-*.joblib
-*.h5
-*.onnx
-data/raw/
-data/processed/
-models/
 mlruns/
 wandb/
+tensorboard/
+lightning_logs/
 
-# Secrets
-.env.*
-!.env.example
-secrets.*
-credentials.*
+# ============================================================
+# DATA (no versionar volúmenes grandes)
+# ============================================================
+data/
+datasets/
+!data/.gitkeep
+!datasets/.gitkeep
+*.csv
+*.tsv
+*.parquet
+*.feather
+*.arrow
+*.avro
+*.orc
+*.xlsx
+*.xls
+*.sav
+*.dta
+*.sas7bdat
+*.sqlite
+*.sqlite3
+*.db
+*.duckdb
+
+# ============================================================
+# MODELOS / ARTEFACTOS DE ML
+# ============================================================
+models/
+artifacts/
+*.pkl
+*.pickle
+*.joblib
+*.h5
+*.hdf5
+*.keras
+*.onnx
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+*.bin
+*.gguf
+checkpoints/
+lightning_logs/
+runs/
+
+# ============================================================
+# R / STATISTICAL PACKAGES
+# ============================================================
+.Rhistory
+.RData
+.Rproj.user/
+*.Rproj
+renv/library/
+renv/staging/
+
+# ============================================================
+# LATEX (tesis / papers)
+# ============================================================
+*.aux
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+*.lof
+*.log
+*.lot
+*.out
+*.synctex.gz
+*.toc
+*.nav
+*.snm
+*.vrb
+*.bcf
+*.run.xml
+*.xdv
+
+# ============================================================
+# DOCKER / TOOLING
+# ============================================================
+docker-compose.override.yml
+.docker/
+*.tar
