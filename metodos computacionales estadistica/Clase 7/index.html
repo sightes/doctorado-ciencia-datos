@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>¿Sobreviviría al Titanic?</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚢</text></svg>">
+<!--
+  App de la clase 7 de Métodos Computacionales para la Estadística (Doctorado en Ciencia de Datos, UBO).
+  Lee modelo_titanic.json (lo escribe el notebook de la clase) y calcula en el navegador, sin servidor y sin Python:
+      z = b0 + b1·z1 + … + b8·z8,  con zj = (xj − media) / desviación,   y   p = 1 / (1 + e^(−z))
+  Para publicarla: Hugging Face → New Space → SDK «Static» (plantilla Blank) → Files → Upload files:
+      index.html, modelo_titanic.json y titanic.gif → Commit.  No hace falta requirements.txt ni un .pkl.
+-->
+<style>
+  :root { --fondo: #eef2f7; --tarjeta: #ffffff; --texto: #1d2733; --suave: #5b6675; --linea: #dde3ea;
+          --noche: #0b1424; --azul: #1B6AC9; --naranjo: #C2610A; --oro: #f3c969; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fondo); color: var(--texto);
+         font-family: system-ui, -apple-system, "Segoe UI", Roboto, Ubuntu, Arial, sans-serif; font-size: 16px; }
+
+  /* La portada: el GIF del Titanic con el título encima */
+  .portada { position: relative; height: clamp(220px, 38vw, 380px); overflow: hidden; background: var(--noche); }
+  .portada img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: center 62%; }
+  .portada .velo { position: absolute; inset: 0;
+                   background: linear-gradient(180deg, rgba(11, 20, 36, .10) 0%, rgba(11, 20, 36, .35) 45%, rgba(11, 20, 36, .92) 100%); }
+  .portada .texto { position: absolute; left: 0; right: 0; bottom: 0; max-width: 1100px; margin: 0 auto; padding: 0 18px 18px; color: #fff; }
+  .portada h1 { margin: 0 0 6px; font-size: clamp(1.6rem, 4.6vw, 2.7rem); letter-spacing: .3px; text-shadow: 0 2px 10px rgba(0, 0, 0, .55); }
+  .portada p { margin: 0; color: #dbe5f3; font-size: clamp(.92rem, 1.8vw, 1.05rem); line-height: 1.45; max-width: 760px;
+               text-shadow: 0 1px 6px rgba(0, 0, 0, .6); }
+  .portada .sello { display: inline-block; margin-bottom: 8px; padding: 3px 10px; border-radius: 999px; font-size: .78rem;
+                    background: rgba(243, 201, 105, .18); color: var(--oro); border: 1px solid rgba(243, 201, 105, .45); }
+
+  main { max-width: 1100px; margin: -18px auto 0; padding: 0 16px 30px; display: grid; gap: 14px; position: relative; }
+  .tarjeta { background: var(--tarjeta); border: 1px solid var(--linea); border-radius: 14px; padding: 16px; min-width: 0;
+             box-shadow: 0 6px 18px rgba(11, 20, 36, .06); }
+  h2 { font-size: 1.1rem; margin: 0 0 10px; }
+  .nota { color: var(--suave); font-size: .9rem; line-height: 1.45; margin: 8px 0 0; }
+  .chips, .opciones { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip, .opcion { border: 1px solid var(--linea); background: #fff; border-radius: 999px; padding: 8px 13px; cursor: pointer;
+                   font-size: .92rem; color: var(--texto); transition: background .15s, color .15s, border-color .15s; }
+  .chip:hover, .opcion:hover { border-color: var(--azul); }
+  .chip.activo, .opcion.activo { background: var(--azul); border-color: var(--azul); color: #fff; }
+  .control { margin: 12px 0 0; }
+  .control label { font-size: .88rem; color: var(--suave); display: flex; justify-content: space-between; margin-bottom: 4px; }
+  .control label b { color: var(--texto); font-variant-numeric: tabular-nums; }
+  input[type=range] { width: 100%; accent-color: var(--azul); }
+  .grande { font-size: 3.2rem; font-weight: 800; font-variant-numeric: tabular-nums; margin: 2px 0 8px; }
+  .pista { position: relative; height: 26px; background: #e9eef5; border-radius: 9px; overflow: hidden; }
+  .relleno { position: absolute; top: 0; bottom: 0; left: 0; border-radius: 9px; transition: width .25s, background .25s; }
+  .umbral { position: absolute; top: -3px; bottom: -3px; left: 50%; width: 2px; background: #1d2733; }
+  .marcas { display: flex; justify-content: space-between; font-size: .75rem; color: var(--suave); margin-top: 4px; }
+  .veredicto { font-size: 1.05rem; margin-top: 10px; }
+  #s-prob { position: sticky; top: 0; z-index: 10; }
+  @media (max-width: 949px) {
+    main { margin-top: -12px; }
+    #s-prob { box-shadow: 0 6px 16px rgba(11, 20, 36, .18); }
+    #s-prob h2 { font-size: 1rem; margin-bottom: 0; }
+    #s-prob .grande { font-size: 2.4rem; margin: 0 0 6px; }
+    #s-prob .veredicto { font-size: .95rem; margin-top: 8px; }
+    #calidad, .marcas { display: none; }
+  }
+  .contrib { display: grid; gap: 6px; margin-top: 8px; }
+  .contrib .fila { display: grid; grid-template-columns: 11.5em 1fr 4.5em; align-items: center; gap: 6px; font-size: .88rem; }
+  .contrib .eje { position: relative; height: 16px; }
+  .contrib .centro { position: absolute; left: 50%; top: -2px; bottom: -2px; width: 1px; background: #9aa4b1; }
+  .contrib .barrita { position: absolute; top: 2px; bottom: 2px; border-radius: 3px; }
+  .contrib .num { text-align: right; font-variant-numeric: tabular-nums; }
+  details summary { cursor: pointer; font-weight: 600; }
+  table { border-collapse: collapse; width: 100%; font-size: .85rem; margin-top: 8px; }
+  th, td { border-bottom: 1px solid var(--linea); padding: 5px 6px; text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  .scroll { overflow-x: auto; }
+  .error { display: none; background: #fdecea; border: 1px solid #f5b5ae; border-radius: 12px; padding: 12px; line-height: 1.45; }
+  footer { max-width: 1100px; margin: 0 auto; padding: 0 16px 28px; color: var(--suave); font-size: .8rem; line-height: 1.5; }
+  @media (min-width: 950px) {
+    main { grid-template-columns: 1fr 1fr; grid-template-areas: "error error" "pasajero prob" "pasajero aportes" "modelo modelo"; align-items: start; }
+    #error { grid-area: error; } #s-pasajero { grid-area: pasajero; } #s-prob { grid-area: prob; position: static; }
+    #s-aportes { grid-area: aportes; } #s-modelo { grid-area: modelo; }
+  }
+</style>
+</head>
+<body>
+<header class="portada">
+  <img src="titanic.gif" alt="El Titanic de noche, hundiéndose de proa">
+  <div class="velo"></div>
+  <div class="texto">
+    <span class="sello">Regresión logística · Clase 7</span>
+    <h1>¿Sobreviviría al Titanic?</h1>
+    <p>Un modelo entrenado con los pasajeros reales del Titanic, guardado en un JSON y calculado aquí, en tu
+       navegador. Elige un pasajero o arma el tuyo, y mira cómo cambia su probabilidad de sobrevivir.</p>
+  </div>
+</header>
+
+<main>
+  <div class="error" id="error">
+    No se pudo leer <b>modelo_titanic.json</b>. Si abriste esta página con doble clic, el navegador no deja leer otros
+    archivos: súbela a Hugging Face junto al JSON, ábrela con <code>python -m http.server</code> o elige el archivo aquí:
+    <input type="file" id="archivo" accept=".json,application/json">
+  </div>
+
+  <section class="tarjeta" id="s-prob">
+    <h2>Probabilidad de sobrevivir</h2>
+    <div class="grande" id="p"></div>
+    <div class="pista"><div class="relleno" id="barra"></div><div class="umbral"></div></div>
+    <div class="marcas"><span>0 %</span><span>umbral: 50 %</span><span>100 %</span></div>
+    <p class="veredicto" id="veredicto"></p>
+    <p class="nota" id="calidad"></p>
+  </section>
+
+  <section class="tarjeta" id="s-pasajero">
+    <h2>El pasajero</h2>
+    <div class="chips" id="chips"></div>
+    <div class="control"><label>Clase del pasaje</label><div class="opciones" id="o-clase"></div></div>
+    <div class="control"><label>Sexo</label><div class="opciones" id="o-sexo"></div></div>
+    <div class="control"><label>Puerto de embarque</label><div class="opciones" id="o-puerto"></div></div>
+    <div class="control"><label>Edad (años) <b id="t-edad"></b></label><input type="range" id="edad" min="0" max="80" step="1"></div>
+    <div class="control"><label>Hermanos o cónyuge a bordo <b id="t-hermanos"></b></label><input type="range" id="hermanos" min="0" max="8" step="1"></div>
+    <div class="control"><label>Padres o hijos a bordo <b id="t-padres"></b></label><input type="range" id="padres" min="0" max="6" step="1"></div>
+    <div class="control"><label>Tarifa pagada (libras de 1912) <b id="t-tarifa"></b></label><input type="range" id="tarifa" min="0" max="520" step="0.5"></div>
+  </section>
+
+  <section class="tarjeta" id="s-aportes">
+    <h2>¿Por qué? Lo que aporta cada variable</h2>
+    <p class="nota" id="explica"></p>
+    <div class="contrib" id="contrib"></div>
+  </section>
+
+  <section class="tarjeta" id="s-modelo">
+    <details>
+      <summary>El modelo por dentro: todos sus números</summary>
+      <p class="nota" id="cuantos"></p>
+      <div class="scroll"><table id="tabla"></table></div>
+      <p class="nota">Cada variable se estandariza con la media y la desviación del train: z<sub>j</sub> = (x<sub>j</sub> − media) / desviación.
+         Después, z = b₀ + b₁·z₁ + … + b₈·z₈, y la probabilidad es p = 1 / (1 + e<sup>−z</sup>). Eso es todo.</p>
+    </details>
+  </section>
+</main>
+
+<footer>
+  Datos: el dataset de entrenamiento de la competencia «Titanic - Machine Learning from Disaster» de Kaggle (891 pasajeros),
+  con las columnas en español. Proyecto educativo de la clase 7 de Métodos Computacionales para la Estadística, Doctorado en
+  Ciencia de Datos, Universidad Bernardo O'Higgins.
+</footer>
+
+<script>
+(function () {
+  const $ = (s) => document.querySelector(s);
+  const NOMBRES = { "Clase": "Clase del pasaje", "Edad": "Edad", "HermanosConyuge": "Hermanos o cónyuge",
+                    "PadresHijos": "Padres o hijos", "Tarifa": "Tarifa", "Sexo_mujer": "Sexo: mujer",
+                    "PuertoEmbarque_Queenstown": "Embarcó en Queenstown", "PuertoEmbarque_Southampton": "Embarcó en Southampton" };
+  const EJEMPLOS = [
+    { nombre: "Genovencio", clase: 3, sexo: "hombre", puerto: "S", edad: 38, hermanos: 0, padres: 0, tarifa: 8.05 },
+    { nombre: "Una mujer de primera", clase: 1, sexo: "mujer", puerto: "C", edad: 35, hermanos: 1, padres: 0, tarifa: 53 },
+    { nombre: "Un niño de segunda", clase: 2, sexo: "hombre", puerto: "S", edad: 8, hermanos: 1, padres: 2, tarifa: 26 },
+  ];
+  let M = null, s = Object.assign({}, EJEMPLOS[0]), elegido = 0;
+
+  function num(v, d) {
+    const t = Math.abs(v).toLocaleString("en-US", { minimumFractionDigits: d, maximumFractionDigits: d });
+    return (v < 0 ? "−" : "") + t.replace(/,/g, "§").replace(/\./g, ",").replace(/§/g, ".");
+  }
+  function fila() {                     // el pasajero, en las columnas del modelo
+    return { "Clase": s.clase, "Edad": s.edad, "HermanosConyuge": s.hermanos, "PadresHijos": s.padres, "Tarifa": s.tarifa,
+             "Sexo_mujer": s.sexo === "mujer" ? 1 : 0, "PuertoEmbarque_Queenstown": s.puerto === "Q" ? 1 : 0,
+             "PuertoEmbarque_Southampton": s.puerto === "S" ? 1 : 0 };
+  }
+  function etiqueta(c) {                // el nombre de cada aporte, con el valor del pasajero cuando ayuda
+    if (c === "Sexo_mujer") return "Sexo: " + s.sexo;
+    if (c === "Clase") return "Clase del pasaje: " + s.clase + "ª";
+    return NOMBRES[c] || c;
+  }
+  function aportes() {                  // b_j · z_j de cada columna
+    const f = fila();
+    return M.columnas.map((c, j) => M.b[j] * (f[c] - M.media[j]) / M.desviacion[j]);
+  }
+
+  function opciones(id, lista, clave) {
+    const caja = $(id); caja.innerHTML = "";
+    lista.forEach(([valor, texto]) => {
+      const b = document.createElement("button");
+      b.className = "opcion"; b.textContent = texto; b.dataset.v = valor;
+      b.onclick = () => { s[clave] = (clave === "clase") ? +valor : valor; elegido = -1; dibujar(); };
+      caja.appendChild(b);
+    });
+  }
+  function deslizador(id) {
+    $("#" + id).addEventListener("input", (ev) => { s[id] = parseFloat(ev.target.value); elegido = -1; dibujar(); });
+  }
+
+  function armar() {
+    const chips = $("#chips"); chips.innerHTML = "";
+    EJEMPLOS.forEach((e, k) => {
+      const b = document.createElement("button");
+      b.className = "chip"; b.textContent = e.nombre; b.dataset.k = k;
+      b.onclick = () => { s = Object.assign({}, e); elegido = k; dibujar(); };
+      chips.appendChild(b);
+    });
+    opciones("#o-clase", [[1, "1ª"], [2, "2ª"], [3, "3ª"]], "clase");
+    opciones("#o-sexo", [["mujer", "Mujer"], ["hombre", "Hombre"]], "sexo");
+    opciones("#o-puerto", [["C", "Cherbourg (Francia)"], ["Q", "Queenstown (Irlanda)"], ["S", "Southampton (Inglaterra)"]], "puerto");
+    ["edad", "hermanos", "padres", "tarifa"].forEach(deslizador);
+    let h = "<tr><th>Columna</th><th>media (train)</th><th>desviación (train)</th><th>coeficiente b</th></tr>";
+    h += `<tr><td><b>b₀ (intercepto)</b></td><td></td><td></td><td>${num(M.b0, 3)}</td></tr>`;
+    M.columnas.forEach((c, j) => {
+      h += `<tr><td>${NOMBRES[c] || c}</td><td>${num(M.media[j], 2)}</td><td>${num(M.desviacion[j], 2)}</td><td>${num(M.b[j], 3)}</td></tr>`;
+    });
+    $("#tabla").innerHTML = h;
+    const n = M.columnas.length;
+    $("#cuantos").innerHTML = `La logística son <b>${n + 1} números</b> (el intercepto y ${n} coeficientes), más los ${2 * n} ` +
+      `del escalador.` + (M.accuracy_test ? ` Entrenada con ${M.n_train} pasajeros; en los ${M.n_test} que no vio acierta el ` +
+      `${num(100 * M.accuracy_test, 1)} %.` : "");
+    $("#calidad").textContent = "Es una probabilidad, no una certeza" + (M.accuracy_test ?
+      `: con los ${M.n_test} pasajeros que no vio, acertó el ${num(100 * M.accuracy_test, 1)} %.` : ".");
+  }
+
+  function dibujar() {
+    document.querySelectorAll(".chip").forEach((b) => b.classList.toggle("activo", +b.dataset.k === elegido));
+    [["#o-clase", "clase"], ["#o-sexo", "sexo"], ["#o-puerto", "puerto"]].forEach(([id, k]) => {
+      document.querySelectorAll(id + " .opcion").forEach((b) => b.classList.toggle("activo", String(s[k]) === b.dataset.v));
+    });
+    ["edad", "hermanos", "padres", "tarifa"].forEach((k) => {
+      $("#" + k).value = s[k];
+      $("#t-" + k).textContent = k === "tarifa" ? num(s[k], 2) : num(s[k], 0);
+    });
+    const a = aportes();
+    const z = M.b0 + a.reduce((t, v) => t + v, 0);
+    const p = 1 / (1 + Math.exp(-z));
+    $("#p").textContent = num(100 * p, 1) + " %";
+    $("#barra").style.width = (100 * p) + "%";
+    $("#barra").style.background = p >= 0.5 ? "var(--azul)" : "var(--naranjo)";
+    $("#veredicto").innerHTML = `Con el umbral de 0,5 (la raya negra), el modelo dice: <b>${p >= 0.5 ? "sobrevive" : "no sobrevive"}</b>.`;
+    $("#explica").innerHTML = `Parte del intercepto (b₀ = <b>${num(M.b0, 2)}</b>) y le suma lo que aporta cada variable: ` +
+      `z = <b>${num(z, 2)}</b>. Las barras a la derecha suben la probabilidad; las de la izquierda, la bajan.`;
+    const orden = a.map((v, j) => [v, j]).sort((x, y) => Math.abs(y[0]) - Math.abs(x[0]));
+    const maxAbs = Math.max(1e-9, ...a.map(Math.abs));
+    const zona = $("#contrib"); zona.innerHTML = "";
+    orden.forEach(([v, j]) => {
+      const w = Math.abs(v) / maxAbs * 50;
+      const f = document.createElement("div");
+      f.className = "fila";
+      f.innerHTML = `<div>${etiqueta(M.columnas[j])}</div><div class="eje"><div class="centro"></div>` +
+        `<div class="barrita" style="left:${v >= 0 ? 50 : 50 - w}%;width:${w}%;background:${v >= 0 ? "var(--azul)" : "var(--naranjo)"}"></div></div>` +
+        `<div class="num">${num(v, 2)}</div>`;
+      zona.appendChild(f);
+    });
+  }
+
+  function iniciar(modelo) { M = modelo; $("#error").style.display = "none"; armar(); dibujar(); }
+
+  $("#archivo").addEventListener("change", (ev) => {
+    const f = ev.target.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => { try { iniciar(JSON.parse(r.result)); } catch (e) { $("#error").insertAdjacentHTML("beforeend", "<p><b>Ese archivo no es el modelo.</b></p>"); } };
+    r.readAsText(f);
+  });
+  fetch("modelo_titanic.json", { cache: "no-store" })
+    .then((r) => { if (!r.ok) throw new Error(r.status); return r.json(); })
+    .then(iniciar)
+    .catch(() => { $("#error").style.display = "block"; });
+})();
+</script>
+</body>
+</html>
